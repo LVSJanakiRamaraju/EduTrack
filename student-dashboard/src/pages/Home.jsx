@@ -1,53 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase/firebaseConfig';
 import { collection, onSnapshot } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { useNavigate } from 'react-router-dom';
-import './Home.css'; // You'll create this for styles
 
-const Home = () => {
+const Dashboard = () => {
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState('');
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [user] = useAuthState(auth);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const studentsRef = collection(db, 'students');
-    const unsubscribe = onSnapshot(
-      studentsRef,
-      (snapshot) => {
-        const studentsData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setStudents(studentsData);
-        setFilteredStudents(studentsData);
-      },
-      (error) => {
-        alert('Failed to fetch students');
-        console.error(error);
-      }
-    );
+    const unsubscribe = onSnapshot(studentsRef, (snapshot) => {
+      const studentsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setStudents(studentsData);
+      setFilteredStudents(studentsData);
+    });
+
     return () => unsubscribe();
   }, []);
 
   const handleCourseFilter = (course) => {
     setSelectedCourse(course);
-    if (course) {
-      setFilteredStudents(students.filter((student) => student.course === course));
-    } else {
-      setFilteredStudents(students);
-    }
+    setFilteredStudents(course ? students.filter(s => s.course === course) : students);
   };
 
   const handleStudentClick = (student) => {
     if (user) {
       setSelectedStudent(student);
+      setIsModalOpen(true);
     } else {
-      alert('Please login to view student details');
+      alert("Please login to view student details.");
       navigate('/login');
     }
   };
@@ -55,81 +46,139 @@ const Home = () => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      alert('Logged out successfully');
+      alert("Logged out successfully");
       navigate('/');
     } catch (error) {
-      alert('Failed to logout');
+      alert("Failed to logout");
     }
   };
 
-  const courses = [...new Set(students.map((student) => student.course))];
+  const courses = [...new Set(students.map(s => s.course))];
 
   return (
-    <div className="container">
-      <div className="header">
-        <h1>Student Dashboard</h1>
-        <div className="actions">
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
+        <h1 className="text-2xl font-bold mb-4 sm:mb-0">Student Dashboard</h1>
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           {user ? (
             <>
-              <span>Welcome, {user.email}</span>
-              <button onClick={() => navigate('/add-student')}>Add New Student</button>
-              <button onClick={handleLogout} className="logout">Logout</button>
+              <span className="text-sm text-gray-600">Welcome, {user.email}</span>
+              <button
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                onClick={() => navigate('/add-student')}
+              >
+                Add New Student
+              </button>
+              <button
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
             </>
           ) : (
-            <button onClick={() => navigate('/login')}>Login</button>
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+              onClick={() => navigate('/login')}
+            >
+              Login
+            </button>
           )}
         </div>
       </div>
 
-      <select
-        value={selectedCourse}
-        onChange={(e) => handleCourseFilter(e.target.value)}
-        className="dropdown"
-      >
-        <option value="">All Courses</option>
-        {courses.map((course) => (
-          <option key={course} value={course}>{course}</option>
-        ))}
-      </select>
+      <div className="mb-4">
+        <select
+          value={selectedCourse}
+          onChange={(e) => handleCourseFilter(e.target.value)}
+          className="w-full sm:w-64 p-2 border rounded"
+        >
+          <option value="">All Courses</option>
+          {courses.map(course => (
+            <option key={course} value={course}>{course}</option>
+          ))}
+        </select>
+      </div>
 
-      <div className="table-wrapper">
-        <table>
-          <thead>
+      <div className="overflow-x-auto">
+        <table className="min-w-full table-auto border text-left">
+          <thead className="bg-gray-100">
             <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Course</th>
-              <th>Mobile</th>
-              <th>Action</th>
+              <th className="px-4 py-2 border">Name</th>
+              <th className="px-4 py-2 border">Email</th>
+              <th className="px-4 py-2 border">Course</th>
+              <th className="px-4 py-2 border">Mobile</th>
+              <th className="px-4 py-2 border">Action</th>
             </tr>
           </thead>
           <tbody>
-            {filteredStudents.map((student) => (
-              <tr key={student.id}>
-                <td>{student.name}</td>
-                <td>{student.email}</td>
-                <td><span className="badge">{student.course}</span></td>
-                <td>{student.mobile}</td>
-                <td><button onClick={() => handleStudentClick(student)}>View Details</button></td>
+            {filteredStudents.map(student => (
+              <tr
+                key={student.id}
+                className="hover:bg-gray-50 cursor-pointer"
+              >
+                <td className="px-4 py-2 border">{student.name}</td>
+                <td className="px-4 py-2 border">{student.email}</td>
+                <td className="px-4 py-2 border">
+                  <span className="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">
+                    {student.course}
+                  </span>
+                </td>
+                <td className="px-4 py-2 border">{student.mobile}</td>
+                <td className="px-4 py-2 border">
+                  <button
+                    onClick={() => handleStudentClick(student)}
+                    className="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded"
+                  >
+                    View Details
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {selectedStudent && (
-        <div className="modal-overlay" onClick={() => setSelectedStudent(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setSelectedStudent(null)}>X</button>
-            <h2>Student Details</h2>
-            <div className="details">
-              <p><strong>Name:</strong> {selectedStudent.name}</p>
-              <p><strong>Email:</strong> {selectedStudent.email}</p>
-              <p><strong>Course:</strong> <span className="badge">{selectedStudent.course}</span></p>
-              <p><strong>Mobile:</strong> {selectedStudent.mobile}</p>
-              <p><strong>DOB:</strong> {selectedStudent.dateOfBirth}</p>
-              <p><strong>Address:</strong> {selectedStudent.address}</p>
-              <p><strong>Emergency Contact:</strong> {selectedStudent.emergencyContact}</p>
+      {/* Modal */}
+      {isModalOpen && selectedStudent && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg max-w-lg w-full p-6 shadow-lg relative">
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"
+            >
+              &times;
+            </button>
+            <h2 className="text-xl font-semibold mb-4">Student Details</h2>
+            <div className="space-y-2">
+              <div>
+                <p className="font-medium">Name:</p>
+                <p>{selectedStudent.name}</p>
+              </div>
+              <div>
+                <p className="font-medium">Email:</p>
+                <p>{selectedStudent.email}</p>
+              </div>
+              <div>
+                <p className="font-medium">Course:</p>
+                <p>{selectedStudent.course}</p>
+              </div>
+              <div>
+                <p className="font-medium">Mobile:</p>
+                <p>{selectedStudent.mobile}</p>
+              </div>
+              <div>
+                <p className="font-medium">Date of Birth:</p>
+                <p>{selectedStudent.dateOfBirth}</p>
+              </div>
+              <div>
+                <p className="font-medium">Address:</p>
+                <p>{selectedStudent.address}</p>
+              </div>
+              <div>
+                <p className="font-medium">Emergency Contact:</p>
+                <p>{selectedStudent.emergencyContact}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -138,4 +187,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default Dashboard;
