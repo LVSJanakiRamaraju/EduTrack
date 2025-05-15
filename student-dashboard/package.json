@@ -11,15 +11,14 @@
   },
   "dependencies": {
     "@chakra-ui/modal": "^2.3.1",
+    "@tailwindcss/postcss": "^4.1.4",
     "axios": "^1.9.0",
     "axios-mock-adapter": "^2.1.0",
     "firebase": "^11.7.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-firebase-hooks": "^5.1.1",
-    "react-router-dom": "^7.6.0",
-    "@tailwindcss/postcss": "^4.1.4"
- 
+    "react-router-dom": "^7.6.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",

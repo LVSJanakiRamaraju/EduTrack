@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { db } from '../firebase/firebaseConfig';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 
 const AddStudent = () => {
@@ -32,16 +30,26 @@ const AddStudent = () => {
     const finalCourse = formData.course === 'other' ? formData.customCourse : formData.course;
 
     try {
-      await addDoc(collection(db, 'students'), {
-        ...formData,
-        course: finalCourse,
-        timestamp: serverTimestamp()
+        const api = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${api}/students`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ...formData, course: finalCourse })
       });
-      setSuccess('Student added successfully');
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to add student');
+      }
+
+      setSuccess(data.message || 'Student added successfully');
       navigate('/');
     } catch (error) {
       console.error('Error adding student:', error);
-      setError('Failed to add student');
+      setError(error.message || 'Failed to add student');
     }
   };
 
@@ -60,7 +68,7 @@ const AddStudent = () => {
         {error && <p className="text-red-600 text-sm mb-4 text-center">{error}</p>}
         {success && <p className="text-green-600 text-sm mb-4 text-center">{success}</p>}
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium mb-1">Name</label>
             <input

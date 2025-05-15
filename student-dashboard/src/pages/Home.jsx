@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../firebase/firebaseConfig';
-import { collection, onSnapshot } from 'firebase/firestore';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { auth } from '../firebase/firebaseConfig'; // Firebase Auth still in use
 import { signOut } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
-const Dashboard = () => {
+const Home = () => {
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState('');
@@ -15,17 +15,18 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const studentsRef = collection(db, 'students');
-    const unsubscribe = onSnapshot(studentsRef, (snapshot) => {
-      const studentsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setStudents(studentsData);
-      setFilteredStudents(studentsData);
-    });
+    const fetchStudents = async () => {
+      try {
+        const api = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000';
+        const res = await axios.get(`${api}/students`); 
+        setStudents(res.data);
+        setFilteredStudents(res.data);
+      } catch (error) {
+        console.error("Failed to fetch students:", error);
+      }
+    };
 
-    return () => unsubscribe();
+    fetchStudents();
   }, []);
 
   const handleCourseFilter = (course) => {
@@ -114,7 +115,7 @@ const Dashboard = () => {
           <tbody>
             {filteredStudents.map(student => (
               <tr
-                key={student.id}
+                key={student._id} // ✅ Use MongoDB's _id
                 className="hover:bg-gray-50 cursor-pointer"
               >
                 <td className="px-4 py-2 border">{student.name}</td>
@@ -187,4 +188,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Home;
