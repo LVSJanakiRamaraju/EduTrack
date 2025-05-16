@@ -83,10 +83,12 @@ export const auth = getAuth(app);
 
 
 ### 📦 API Endpoints
-Method	Endpoint	Description
-GET	/students	Get all student records
-POST	/students	Add a new student
-GET	/students/:id	Get student details by ID
+
+| Method | Endpoint                         | Description                           |
+|--------|----------------------------------|---------------------------------------|
+| GET    | `/students`                      | Get all student records               |
+| POST   | `/students`                      | Add a new student                     |
+
 
 ### 🔐 Authentication
 Firebase Authentication is used for login.
