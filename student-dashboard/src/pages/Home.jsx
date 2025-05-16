@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../firebase/firebaseConfig'; // Firebase Auth still in use
+import { auth } from '../firebase/firebaseConfig'; // Firebase Auth
 import { signOut } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
@@ -9,6 +9,7 @@ const Home = () => {
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState('');
+  const [searchName, setSearchName] = useState('');
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [user] = useAuthState(auth);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,8 +18,7 @@ const Home = () => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const api = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000';
-        const res = await axios.get(`${api}/students`); 
+        const res = await axios.get('http://localhost:5000/students');
         setStudents(res.data);
         setFilteredStudents(res.data);
       } catch (error) {
@@ -29,10 +29,22 @@ const Home = () => {
     fetchStudents();
   }, []);
 
-  const handleCourseFilter = (course) => {
-    setSelectedCourse(course);
-    setFilteredStudents(course ? students.filter(s => s.course === course) : students);
-  };
+  // Filter when course or name changes
+  useEffect(() => {
+    let filtered = students;
+
+    if (selectedCourse) {
+      filtered = filtered.filter(student => student.course === selectedCourse);
+    }
+
+    if (searchName.trim()) {
+      filtered = filtered.filter(student =>
+        student.name.toLowerCase().includes(searchName.toLowerCase())
+      );
+    }
+
+    setFilteredStudents(filtered);
+  }, [selectedCourse, searchName, students]);
 
   const handleStudentClick = (student) => {
     if (user) {
@@ -88,10 +100,10 @@ const Home = () => {
         </div>
       </div>
 
-      <div className="mb-4">
+      <div className="flex flex-col sm:flex-row gap-4 mb-4">
         <select
           value={selectedCourse}
-          onChange={(e) => handleCourseFilter(e.target.value)}
+          onChange={(e) => setSelectedCourse(e.target.value)}
           className="w-full sm:w-64 p-2 border rounded"
         >
           <option value="">All Courses</option>
@@ -99,6 +111,14 @@ const Home = () => {
             <option key={course} value={course}>{course}</option>
           ))}
         </select>
+
+        <input
+          type="text"
+          placeholder="Search by name"
+          value={searchName}
+          onChange={(e) => setSearchName(e.target.value)}
+          className="w-full sm:w-64 p-2 border rounded"
+        />
       </div>
 
       <div className="overflow-x-auto">
@@ -115,7 +135,7 @@ const Home = () => {
           <tbody>
             {filteredStudents.map(student => (
               <tr
-                key={student._id} // ✅ Use MongoDB's _id
+                key={student._id || student.id}
                 className="hover:bg-gray-50 cursor-pointer"
               >
                 <td className="px-4 py-2 border">{student.name}</td>
@@ -152,34 +172,13 @@ const Home = () => {
             </button>
             <h2 className="text-xl font-semibold mb-4">Student Details</h2>
             <div className="space-y-2">
-              <div>
-                <p className="font-medium">Name:</p>
-                <p>{selectedStudent.name}</p>
-              </div>
-              <div>
-                <p className="font-medium">Email:</p>
-                <p>{selectedStudent.email}</p>
-              </div>
-              <div>
-                <p className="font-medium">Course:</p>
-                <p>{selectedStudent.course}</p>
-              </div>
-              <div>
-                <p className="font-medium">Mobile:</p>
-                <p>{selectedStudent.mobile}</p>
-              </div>
-              <div>
-                <p className="font-medium">Date of Birth:</p>
-                <p>{selectedStudent.dateOfBirth}</p>
-              </div>
-              <div>
-                <p className="font-medium">Address:</p>
-                <p>{selectedStudent.address}</p>
-              </div>
-              <div>
-                <p className="font-medium">Emergency Contact:</p>
-                <p>{selectedStudent.emergencyContact}</p>
-              </div>
+              <div><p className="font-medium">Name:</p><p>{selectedStudent.name}</p></div>
+              <div><p className="font-medium">Email:</p><p>{selectedStudent.email}</p></div>
+              <div><p className="font-medium">Course:</p><p>{selectedStudent.course}</p></div>
+              <div><p className="font-medium">Mobile:</p><p>{selectedStudent.mobile}</p></div>
+              <div><p className="font-medium">Date of Birth:</p><p>{selectedStudent.dateOfBirth}</p></div>
+              <div><p className="font-medium">Address:</p><p>{selectedStudent.address}</p></div>
+              <div><p className="font-medium">Emergency Contact:</p><p>{selectedStudent.emergencyContact}</p></div>
             </div>
           </div>
         </div>
